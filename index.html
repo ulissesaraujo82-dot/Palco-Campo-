@@ -487,13 +487,13 @@ function renderCheckout(){
 
     <div class="field">
       <label>Nome completo</label>
-      <input type="text" placeholder="Seu nome" value="${state.buyer.name}"
+      <input id="buyer-name" type="text" placeholder="Seu nome" value="${state.buyer.name}"
         oninput="state.buyer.name=this.value">
     </div>
 
     <div class="field">
       <label>E-mail</label>
-      <input type="email" placeholder="voce@email.com" value="${state.buyer.email}"
+      <input id="buyer-email" type="email" placeholder="voce@email.com" value="${state.buyer.email}"
         oninput="state.buyer.email=this.value">
     </div>
 
@@ -763,7 +763,7 @@ function renderCurrentView(){
   }
 }
 
-function render(){function render(){
+function render(){
   const active = document.activeElement;
   const focusId = active && active.id ? active.id : null;
   const start = active && typeof active.selectionStart === 'number' ? active.selectionStart : null;
