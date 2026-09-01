@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="palco/campo - Venda de ingressos para shows e esportes com Stripe e MercadoPago">
+<meta name="theme-color" content="#15121c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="palco/campo">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2315121c' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='80' fill='%23ff3d68' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>P</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%2315121c' width='180' height='180' rx='40'/><text x='50%' y='50%' font-size='70' fill='%23ff3d68' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>P</text></svg>">
+<title>palco/campo - Ingressos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+  :root{
+    --ink:#15121c;
+    --panel:#1f1a29;
+    --panel2:#241f30;
+    --line:#382f45;
+    --paper:#f4f0e8;
+    --muted:#9c93ac;
+    --show:#ff3d68;
+    --show-dim:#4a1c2b;
+    --sport:#22d3a6;
+    --sport-dim:#123b34;
+    --warn:#f2b84b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  #shell{
+    width:100%;
+    max-width:460px;
+    min-height:100vh;
+    background:var(--ink);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+  }
+  .display{font-family:'Anton',sans-serif;font-weight:400;letter-spacing:0.01em;}
+
+  header.top{
+    padding:18px 20px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(var(--ink) 80%, transparent);
+  }
+  .wordmark{font-family:'Anton',sans-serif;font-size:22px;letter-spacing:0.02em;}
+  .wordmark .p{color:var(--show);}
+  .wordmark .c{color:var(--sport);}
+  .wordmark .slash{color:var(--muted);font-weight:400;}
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%;
+    background:var(--panel);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--paper);
+  }
+
+  main{flex:1;padding-bottom:92px;overflow-x:hidden;}
+
+  .tabs{display:flex;gap:8px;padding:4px 20px 18px;}
+  .tab{
+    padding:8px 16px;border-radius:20px;font-size:14px;font-weight:600;
+    background:var(--panel);color:var(--muted);border:1px solid var(--line);
+    cursor:pointer;white-space:nowrap;
+  }
+  .tab.active-all{background:var(--paper);color:var(--ink);border-color:var(--paper);}
+  .tab.active-show{background:var(--show);color:#1a0810;border-color:var(--show);}
+  .tab.active-sport{background:var(--sport);color:#08211c;border-color:var(--sport);}
+
+  .section-label{padding:0 20px;font-size:13px;color:var(--muted);margin-bottom:10px;}
+
+  .grid{display:flex;flex-direction:column;gap:16px;padding:0 20px;}
+  .ticket-card{
+    background:var(--panel);
+    border-radius:16px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    cursor:pointer;
+    position:relative;
+  }
+  .ticket-card img{width:100%;height:150px;object-fit:cover;display:block;}
+  .cat-pill{
+    position:absolute;top:12px;left:12px;
+    padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  }
+  .cat-pill.show{background:var(--show);color:#1a0810;}
+  .cat-pill.esporte{background:var(--sport);color:#08211c;}
+  .stub-divider{
+    height:0;border-top:2px dashed var(--line);
+    position:relative;margin:0 0;
+  }
+  .stub-divider::before,.stub-divider::after{
+    content:'';position:absolute;top:-9px;width:18px;height:18px;border-radius:50%;
+    background:var(--ink);
+  }
+  .stub-divider::before{left:-9px;}
+  .stub-divider::after{right:-9px;}
+  .ticket-info{padding:14px 16px 16px;}
+  .ev-title{font-family:'Anton',sans-serif;font-size:19px;line-height:1.1;margin:0 0 6px;}
+  .ev-meta{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:2px;margin-bottom:10px;}
+  .ev-foot{display:flex;justify-content:space-between;align-items:center;}
+  .price-from{font-size:12px;color:var(--muted);}
+  .price-val{font-family:'Anton',sans-serif;font-size:18px;}
+
+  .empty{padding:60px 30px;text-align:center;color:var(--muted);font-size:14px;}
+  .empty .display{font-size:20px;color:var(--paper);margin-bottom:8px;}
+
+  nav.bottom{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:100%;max-width:460px;
+    background:var(--panel);border-top:1px solid var(--line);
+    display:flex;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    z-index:30;
+  }
+  .nav-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:none;border:none;color:var(--muted);font-size:11px;font-family:'Inter';
+    cursor:pointer;padding:4px;font-weight:600;
+  }
+  .nav-btn.active{color:var(--paper);}
+  .nav-btn svg{width:22px;height:22px;}
+
+  .detail-hero{position:relative;}
+  .detail-hero img{width:100%;height:260px;object-fit:cover;display:block;}
+  .back-btn{
+    position:absolute;top:16px;left:16px;width:38px;height:38px;border-radius:50%;
+    background:rgba(21,18,28,0.7);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;color:var(--paper);
+    border:1px solid rgba(255,255,255,0.15);cursor:pointer;
+  }
+  .detail-body{padding:20px;}
+  .detail-title{font-family:'Anton',sans-serif;font-size:28px;line-height:1.05;margin:0 0 10px;}
+  .detail-meta-row{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:4px;}
+  .detail-desc{font-size:14px;line-height:1.6;color:#cbc4d6;margin:18px 0;}
+  .tier-label{font-size:13px;color:var(--muted);margin:22px 0 10px;text-transform:none;}
+  .tier{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 16px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel);margin-bottom:10px;cursor:pointer;
+  }
+  .tier.selected{border-color:var(--accent,var(--show));background:var(--panel2);}
+  .tier-name{font-weight:700;font-size:14px;margin-bottom:2px;}
+  .tier-sub{font-size:12px;color:var(--muted);}
+  .tier-price{font-family:'Anton',sans-serif;font-size:17px;}
+  .qty-row{display:flex;align-items:center;gap:14px;margin:18px 0 6px;}
+  .qty-btn{width:34px;height:34px;border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--paper);font-size:18px;cursor:pointer;}
+  .qty-val{font-family:'Anton',sans-serif;font-size:18px;min-width:20px;text-align:center;}
+
+  .cta-bar{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:100%;max-width:460px;background:var(--panel);border-top:1px solid var(--line);
+    padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+    display:flex;align-items:center;justify-content:space-between;gap:14px;z-index:30;
+  }
+  .cta-total{}
+  .cta-total .lbl{font-size:11px;color:var(--muted);}
+  .cta-total .val{font-family:'Anton',sans-serif;font-size:20px;}
+  .btn{
+    border:none;border-radius:12px;padding:14px 22px;font-weight:700;font-size:14px;
+    cursor:pointer;font-family:'Inter';
+  }
+  .btn-primary{background:var(--paper);color:var(--ink);flex:1;}
+  .btn-primary:disabled{opacity:0.4;}
+  .btn-ghost{background:transparent;color:var(--paper);border:1px solid var(--line);}
+  .btn-block{width:100%;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+  .field input,.field select,.field textarea{
+    width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel);color:var(--paper);font-size:14px;font-family:'Inter';
+  }
+  .field textarea{resize:vertical;min-height:70px;}
+
+  .pay-gateway{
+    display:flex;gap:12px;margin-bottom:18px;
+  }
+  .pay-gateway-opt{
+    flex:1;padding:16px;border-radius:14px;border:2px solid var(--line);
+    background:var(--panel);text-align:center;cursor:pointer;
+  }
+  .pay-gateway-opt.active{border-color:var(--paper);background:var(--panel2);}
+  .pay-gateway-opt .logo{font-family:'Anton',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+  .pay-gateway-opt .sub{font-size:11px;color:var(--muted);}
+
+  .summary-row{display:flex;justify-content:space-between;font-size:14px;padding:8px 0;color:#cbc4d6;}
+  .summary-row.total{border-top:1px solid var(--line);margin-top:6px;padding-top:14px;font-weight:800;color:var(--paper);font-size:16px;}
+
+  .confirm-wrap{padding:26px 20px;text-align:center;}
+  .check-circle{
+    width:64px;height:64px;border-radius:50%;background:var(--sport);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+  }
+  .final-ticket{
+    background:var(--panel);border-radius:18px;border:1px solid var(--line);
+    text-align:left;overflow:hidden;margin-top:24px;
+  }
+  .ft-top{padding:18px;}
+  .ft-code{
+    padding:16px;background:var(--panel2);text-align:center;
+    font-family:'Anton',sans-serif;font-size:22px;letter-spacing:0.15em;
+    border-top:2px dashed var(--line);
+  }
+
+  .mt-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 20px 14px;}
+  .mt-title{font-family:'Anton',sans-serif;font-size:17px;margin-bottom:4px;}
+  .mt-row{font-size:13px;color:var(--muted);margin-bottom:2px;}
+  .mt-code{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-family:'Anton',sans-serif;font-size:14px;letter-spacing:0.1em;color:var(--paper);}
+
+  .admin-ev{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin:0 20px 12px;}
+  .admin-ev img{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;}
+  .admin-ev .info{flex:1;min-width:0;}
+  .admin-ev .info .t{font-weight:700;font-size:14px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .admin-ev .info .s{font-size:12px;color:var(--muted);}
+  .admin-ev button{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;}
+  .fab{
+    position:fixed;bottom:96px;left:50%;
+    transform:translateX(calc(-50% + 170px));
+    width:52px;height:52px;border-radius:50%;background:var(--show);
+    color:#1a0810;border:none;font-size:26px;cursor:pointer;z-index:25;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 16px rgba(255,61,104,0.35);
+  }
+  .tier-editor{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel);}
+  .tier-editor-row{display:flex;gap:8px;}
+  .tier-editor-row .field{flex:1;}
+  .remove-tier{background:none;border:none;color:var(--show);font-size:12px;cursor:pointer;margin-top:4px;padding:0;font-weight:600;}
+  .add-tier-btn{background:none;border:1px dashed var(--line);color:var(--muted);border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:13px;margin-bottom:16px;}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--paper);color:var(--ink);padding:12px 20px;border-radius:30px;
+    font-size:13px;font-weight:700;z-index:100;box-shadow:0 8px 20px rgba(0,0,0,0.4);
+  }
+
+  .loading{text-align:center;color:var(--muted);padding:20px;}
+  .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--paper);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .setup-info{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:18px;font-size:13px;line-height:1.5;}
+  .setup-info strong{color:var(--paper);}
+  .setup-info a{color:var(--show);text-decoration:none;}
+  .setup-info a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div id="app"></div>
+</div>
+
+<script>
+// Register Service Worker para funcionar offline
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(err => {
+    console.log('SW registration failed:', err);
+  });
+}
+
+const ICONS = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>',
+  ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg>',
+  admin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 10h18M8 4v4"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="#08211c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
+};
+
+const SEEDS = [
+  {id:'ev1', category:'show', title:'Noite de Rock Nacional', venue:'Arena Vibe', city:'São Paulo, SP', date:'2026-10-17T21:00:00', image:'https://picsum.photos/seed/rocknac/800/600',
+    description:'Uma noite inteira dedicada aos clássicos do rock brasileiro, com banda completa e participações especiais direto do palco da Arena Vibe.',
+    tiers:[{name:'Pista',price:90,capacity:400},{name:'Pista Premium',price:150,capacity:150},{name:'Camarote',price:280,capacity:60}]},
+  {id:'ev2', category:'esporte', title:'Final do Estadual de Futsal', venue:'Ginásio Municipal', city:'Curitiba, PR', date:'2026-09-20T19:30:00', image:'https://picsum.photos/seed/futsalfinal/800/600',
+    description:'A grande decisão do campeonato estadual. Torça pelo seu time em um confronto que promete casa cheia até o último minuto.',
+    tiers:[{name:'Arquibancada',price:35,capacity:800},{name:'Cadeira Numerada',price:70,capacity:200}]},
+  {id:'ev3', category:'show', title:'Festival Sunset Eletrônica', venue:'Píer Marina', city:'Florianópolis, SC', date:'2026-11-07T17:00:00', image:'https://picsum.photos/seed/sunsetfest/800/600',
+    description:'Line-up com DJs nacionais e internacionais, pôr do sol na beira da marina e três palcos simultâneos até o amanhecer.',
+    tiers:[{name:'Pista',price:180,capacity:600},{name:'VIP Deck',price:340,capacity:120}]},
+  {id:'ev4', category:'esporte', title:'Clássico de Basquete', venue:'Ginásio Poliesportivo', city:'Rio de Janeiro, RJ', date:'2026-09-28T20:00:00', image:'https://picsum.photos/seed/basqueteclassico/800/600',
+    description:'O maior clássico da temporada. Duas torcidas, uma quadra, e uma disputa acirrada do início ao fim.',
+    tiers:[{name:'Geral',price:45,capacity:500},{name:'Setor Central',price:85,capacity:180}]},
+  {id:'ev5', category:'show', title:'Turnê Sertanejo Raiz', venue:'Parque de Exposições', city:'Ribeirão Preto, SP', date:'2026-10-03T20:00:00', image:'https://picsum.photos/seed/sertanejoraiz/800/600',
+    description:'O sertanejo de raiz volta às origens em uma turnê acústica e intimista, com clássicos que marcaram gerações.',
+    tiers:[{name:'Pista',price:110,capacity:500},{name:'Camarote',price:260,capacity:80}]},
+];
+
+let state = {
+  view:'home',
+  category:'all',
+  events:[],
+  selectedEventId:null,
+  selectedTierIdx:0,
+  qty:1,
+  tickets:[],
+  form:null,
+  buyer:{name:'',email:''},
+  payGateway:'stripe',
+  lastPurchase:null,
+  loading:true,
+  processingPayment:false,
+};
+
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtMoney(v){
+  return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
+function genCode(){
+  return 'PC-' + Math.random().toString(36).slice(2,6).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+}
+
+async function loadEvents(){
+  try{
+    const res = await window.storage.get('events-list', true);
+    state.events = res ? JSON.parse(res.value) : [];
+  }catch(e){ state.events = []; }
+  if(!state.events || state.events.length === 0){
+    state.events = SEEDS;
+    try{ await window.storage.set('events-list', JSON.stringify(SEEDS), true); }catch(e){}
+  }
+}
+async function saveEvents(){
+  try{ await window.storage.set('events-list', JSON.stringify(state.events), true); }catch(e){ showToast('Erro ao salvar evento'); }
+}
+async function loadTickets(){
+  try{
+    const res = await window.storage.get('my-tickets', false);
+    state.tickets = res ? JSON.parse(res.value) : [];
+  }catch(e){ state.tickets = []; }
+}
+async function saveTickets(){
+  try{ await window.storage.set('my-tickets', JSON.stringify(state.tickets), false); }catch(e){ showToast('Erro ao salvar ingresso'); }
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className='toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2200);
+}
+
+function go(view, extra){
+  state.view = view;
+  if(extra) Object.assign(state, extra);
+  window.scrollTo(0,0);
+  render();
+}
+
+function bottomNav(active){
+  return `<nav class="bottom">
+    <button class="nav-btn ${active==='home'?'active':''}" onclick="go('home')">${ICONS.home}<span>Início</span></button>
+    <button class="nav-btn ${active==='tickets'?'active':''}" onclick="openTickets()">${ICONS.ticket}<span>Meus ingressos</span></button>
+    <button class="nav-btn ${active==='admin'?'active':''}" onclick="go('admin')">${ICONS.admin}<span>Organizador</span></button>
+  </nav>`;
+}
+function openTickets(){ go('tickets'); }
+
+/* ---------- HOME ---------- */
+function renderHome(){
+  const filtered = state.category==='all' ? state.events : state.events.filter(e=>e.category===state.category);
+  const sorted = [...filtered].sort((a,b)=> new Date(a.date)-new Date(b.date));
+  return `
+  <header class="top">
+    <div class="wordmark"><span class="p">palco</span><span class="slash">/</span><span class="c">campo</span></div>
+  </header>
+  <main>
+    <div class="tabs">
+      <div class="tab ${state.category==='all'?'active-all':''}" onclick="setCategory('all')">Tudo</div>
+      <div class="tab ${state.category==='show'?'active-show':''}" onclick="setCategory('show')">Shows</div>
+      <div class="tab ${state.category==='esporte'?'active-sport':''}" onclick="setCategory('esporte')">Esportes</div>
+    </div>
+    <div class="section-label">${sorted.length} evento${sorted.length===1?'':'s'} disponí${sorted.length===1?'vel':'veis'}</div>
+    <div class="grid">
+      ${sorted.length ? sorted.map(eventCard).join('') : `<div class="empty"><div class="display">Nada por aqui ainda</div>Volte depois ou cadastre um evento na aba Organizador.</div>`}
+    </div>
+  </main>
+  ${bottomNav('home')}`;
+}
+function eventCard(ev){
+  const minPrice = Math.min(...ev.tiers.map(t=>t.price));
+  return `<div class="ticket-card" onclick="openEvent('${ev.id}')">
+    <img src="${ev.image}" alt="">
+    <div class="cat-pill ${ev.category}">${ev.category==='show'?'Show':'Esporte'}</div>
+    <div class="stub-divider"></div>
+    <div class="ticket-info">
+      <div class="ev-title">${ev.title}</div>
+      <div class="ev-meta">
+        <span>${fmtDate(ev.date)}</span>
+        <span>${ev.venue} · ${ev.city}</span>
+      </div>
+      <div class="ev-foot">
+        <div><div class="price-from">a partir de</div><div class="price-val">${fmtMoney(minPrice)}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+function setCategory(c){ state.category=c; render(); }
+
+/* ---------- DETAIL ---------- */
+function openEvent(id){
+  state.selectedEventId = id;
+  state.selectedTierIdx = 0;
+  state.qty = 1;
+  go('detail');
+}
+function renderDetail(){
+  const ev = state.events.find(e=>e.id===state.selectedEventId);
+  if(!ev) return renderHome();
+  const accent = ev.category==='show' ? 'var(--show)' : 'var(--sport)';
+  const tier = ev.tiers[state.selectedTierIdx];
+  const total = tier.price * state.qty;
+  return `
+  <div class="detail-hero">
+    <img src="${ev.image}" alt="">
+    <div class="back-btn" onclick="go('home')">${ICONS.back}</div>
+  </div>
+  <main style="padding-bottom:110px;">
+    <div class="detail-body">
+      <div class="cat-pill ${ev.category}" style="position:static;display:inline-block;margin-bottom:12px;">${ev.category==='show'?'Show':'Esporte'}</div>
+      <h1 class="detail-title">${ev.title}</h1>
+      <div class="detail-meta-row">📍 ${ev.venue} · ${ev.city}</div>
+      <div class="detail-meta-row">🗓️ ${fmtDate(ev.date)}</div>
+      <div class="detail-desc">${ev.description}</div>
+
+      <div class="tier-label">Escolha seu setor</div>
+      ${ev.tiers.map((t,i)=>`
+        <div class="tier ${i===state.selectedTierIdx?'selected':''}" style="--accent:${accent}" onclick="selectTier(${i})">
+          <div>
+            <div class="tier-name">${t.name}</div>
+            <div class="tier-sub">${t.capacity} ingressos disponíveis</div>
+          </div>
+          <div class="tier-price">${fmtMoney(t.price)}</div>
+        </div>`).join('')}
+
+      <div class="tier-label" style="margin-bottom:0;">Quantidade</div>
+      <div class="qty-row">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <div class="qty-val">${state.qty}</div>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+    </div>
+  </main>
+  <div class="cta-bar">
+    <div class="cta-total"><div class="lbl">Total</div><div class="val">${fmtMoney(total)}</div></div>
+    <button class="btn btn-primary" onclick="goCheckout()">Continuar</button>
+  </div>`;
+}
+function selectTier(i){ state.selectedTierIdx=i; render(); }
+function changeQty(d){ state.qty = Math.max(1, Math.min(10, state.qty+d)); render(); }
+function goCheckout(){ go('checkout'); }
+
+/* ---------- CHECKOUT ---------- */
+function renderCheckout(){
+  const ev = state.events.find(e=>e.id===state.selectedEventId);
+  const tier = ev.tiers[state.selectedTierIdx];
+  const total = tier.price * state.qty;
+  const canBuy = state.buyer.name.trim() && state.buyer.email.trim().includes('@');
+  return `
+  <header class="top">
+    <div class="icon-btn" onclick="go('detail')">${ICONS.back}</div>
+    <div class="wordmark" style="font-size:16px;">Finalizar compra</div>
+    <div style="width:38px;"></div>
+  </header>
+  <main style="padding:4px 20px 130px;">
+    <div class="section-label" style="padding:0 0 8px;">${ev.title} · ${tier.name} × ${state.qty}</div>
+
+    <div class="field">
+      <label>Nome completo</label>
+      <input type="text" placeholder="Seu nome" value="${state.buyer.name}" oninput="state.buyer.name=this.value; render();">
+    </div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" placeholder="voce@email.com" value="${state.buyer.email}" oninput="state.buyer.email=this.value; render();">
+    </div>
+
+    <div class="tier-label">Escolha o gateway de pagamento</div>
+    <div class="pay-gateway">
+      <div class="pay-gateway-opt ${state.payGateway==='stripe'?'active':''}" onclick="setPayGateway('stripe')">
+        <div class="logo">Stripe</div>
+        <div class="sub">Pix, Cartão, Transfer</div>
+      </div>
+      <div class="pay-gateway-opt ${state.payGateway==='mercadopago'?'active':''}" onclick="setPayGateway('mercadopago')">
+        <div class="logo">MP</div>
+        <div class="sub">Pix, Cartão, Boleto</div>
+      </div>
+    </div>
+
+    <div class="summary-row"><span>${tier.name} × ${state.qty}</span><span>${fmtMoney(total)}</span></div>
+    <div class="summary-row"><span>Taxa de serviço</span><span>${fmtMoney(0)}</span></div>
+    <div class="summary-row total"><span>Total</span><span>${fmtMoney(total)}</span></div>
+
+    <div class="setup-info">
+      <strong>Modo Demo:</strong><br>
+      Clique em "Pagar" para simular a compra. Para pagamentos reais, integre <a href="javascript:showSetupGuide();">sua API</a>.
+    </div>
+  </main>
+  <div class="cta-bar">
+    <button class="btn btn-primary btn-block" ${canBuy?'':'disabled'} onclick="processPayment()">Pagar ${fmtMoney(total)}</button>
+  </div>`;
+}
+function setPayGateway(g){ state.payGateway=g; render(); }
+
+async function processPayment(){
+  if(!state.buyer.name.trim() || !state.buyer.email.trim().includes('@')){
+    showToast('Preencha seus dados');
+    return;
+  }
+  state.processingPayment = true;
+  render();
+  await new Promise(r => setTimeout(r, 1500));
+  confirmPurchaseAfterPayment();
+}
+
+async function confirmPurchaseAfterPayment(){
+  const ev = state.events.find(e=>e.id===state.selectedEventId);
+  const tier = ev.tiers[state.selectedTierIdx];
+  const total = tier.price * state.qty;
+  const purchase = {
+    id: 'tk_'+Date.now(),
+    eventId: ev.id,
+    eventTitle: ev.title,
+    eventDate: ev.date,
+    venue: ev.venue,
+    city: ev.city,
+    tierName: tier.name,
+    qty: state.qty,
+    total,
+    buyer: {...state.buyer},
+    payGateway: state.payGateway,
+    code: genCode(),
+    purchasedAt: new Date().toISOString(),
+  };
+  state.tickets.unshift(purchase);
+  await saveTickets();
+  state.lastPurchase = purchase;
+  state.processingPayment = false;
+  go('confirm');
+}
+
+/* ---------- CONFIRMATION ---------- */
+function renderConfirm(){
+  const p = state.lastPurchase;
+  return `
+  <main>
+    <div class="confirm-wrap">
+      <div class="check-circle">${ICONS.check}</div>
+      <div class="display" style="font-size:24px;">Compra confirmada!</div>
+      <div style="color:var(--muted);font-size:14px;margin-top:6px;">Enviamos os detalhes para ${p.buyer.email}</div>
+
+      <div class="final-ticket">
+        <div class="ft-top">
+          <div class="ev-title" style="font-size:20px;">${p.eventTitle}</div>
+          <div class="ev-meta" style="margin-top:8px;">
+            <span>🗓️ ${fmtDate(p.eventDate)}</span>
+            <span>📍 ${p.venue} · ${p.city}</span>
+            <span>🎟️ ${p.tierName} × ${p.qty}</span>
+            <span>💳 ${p.payGateway.charAt(0).toUpperCase() + p.payGateway.slice(1)}</span>
+          </div>
+        </div>
+        <div class="ft-code">${p.code}</div>
+      </div>
+    </div>
+  </main>
+  <div class="cta-bar">
+    <button class="btn btn-primary btn-block" onclick="go('home',{category:'all'})">Voltar ao início</button>
+  </div>`;
+}
+
+/* ---------- MY TICKETS ---------- */
+function renderTickets(){
+  return `
+  <header class="top"><div class="wordmark" style="font-size:18px;">Meus ingressos</div></header>
+  <main>
+    ${state.tickets.length ? state.tickets.map(t=>`
+      <div class="mt-card">
+        <div class="mt-title">${t.eventTitle}</div>
+        <div class="mt-row">🗓️ ${fmtDate(t.eventDate)}</div>
+        <div class="mt-row">📍 ${t.venue} · ${t.city}</div>
+        <div class="mt-row">🎟️ ${t.tierName} × ${t.qty} · ${fmtMoney(t.total)}</div>
+        <div class="mt-row">💳 ${t.payGateway.charAt(0).toUpperCase() + t.payGateway.slice(1)}</div>
+        <div class="mt-code">${t.code}</div>
+      </div>`).join('') : `<div class="empty"><div class="display">Nenhum ingresso ainda</div>Compre um ingresso e ele aparece aqui.</div>`}
+  </main>
+  ${bottomNav('tickets')}`;
+}
+
+/* ---------- ADMIN ---------- */
+function renderAdmin(){
+  const sorted = [...state.events].sort((a,b)=> new Date(a.date)-new Date(b.date));
+  return `
+  <header class="top"><div class="wordmark" style="font-size:18px;">Organizador</div></header>
+  <main>
+    <div class="section-label">Seus eventos cadastrados ficam visíveis para todos os compradores.</div>
+    ${sorted.length ? sorted.map(ev=>`
+      <div class="admin-ev">
+        <img src="${ev.image}" alt="">
+        <div class="info">
+          <div class="t">${ev.title}</div>
+          <div class="s">${fmtDate(ev.date)} · ${ev.tiers.length} setor${ev.tiers.length===1?'':'es'}</div>
+        </div>
+        <button onclick="editEvent('${ev.id}')">${ICONS.edit}</button>
+        <button onclick="deleteEvent('${ev.id}')">${ICONS.trash}</button>
+      </div>`).join('') : `<div class="empty"><div class="display">Nenhum evento ainda</div>Toque no + para cadastrar seu primeiro evento.</div>`}
+  </main>
+  <button class="fab" onclick="newEvent()">+</button>
+  ${bottomNav('admin')}`;
+}
+function newEvent(){
+  state.form = {
+    id: null, category:'show', title:'', venue:'', city:'', date:'', image:'https://picsum.photos/seed/'+Date.now()+'/800/600',
+    description:'', tiers:[{name:'Pista', price:50, capacity:100}]
+  };
+  go('adminForm');
+}
+function editEvent(id){
+  const ev = state.events.find(e=>e.id===id);
+  state.form = JSON.parse(JSON.stringify(ev));
+  go('adminForm');
+}
+async function deleteEvent(id){
+  state.events = state.events.filter(e=>e.id!==id);
+  await saveEvents();
+  showToast('Evento removido');
+  render();
+}
+function renderAdminForm(){
+  const f = state.form;
+  const dateVal = f.date ? f.date.slice(0,16) : '';
+  return `
+  <header class="top">
+    <div class="icon-btn" onclick="go('admin')">${ICONS.back}</div>
+    <div class="wordmark" style="font-size:16px;">${f.id ? 'Editar evento' : 'Novo evento'}</div>
+    <div style="width:38px;"></div>
+  </header>
+  <main style="padding:4px 20px 100px;">
+    <div class="field">
+      <label>Categoria</label>
+      <select onchange="state.form.category=this.value">
+        <option value="show" ${f.category==='show'?'selected':''}>Show</option>
+        <option value="esporte" ${f.category==='esporte'?'selected':''}>Esporte</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Título do evento</label>
+      <input type="text" value="${f.title}" placeholder="Ex: Noite de Rock" oninput="state.form.title=this.value">
+    </div>
+    <div class="field">
+      <label>Local</label>
+      <input type="text" value="${f.venue}" placeholder="Ex: Arena Vibe" oninput="state.form.venue=this.value">
+    </div>
+    <div class="field">
+      <label>Cidade</label>
+      <input type="text" value="${f.city}" placeholder="Ex: São Paulo, SP" oninput="state.form.city=this.value">
+    </div>
+    <div class="field">
+      <label>Data e horário</label>
+      <input type="datetime-local" value="${dateVal}" oninput="state.form.date=this.value">
+    </div>
+    <div class="field">
+      <label>URL da imagem</label>
+      <input type="text" value="${f.image}" oninput="state.form.image=this.value">
+    </div>
+    <div class="field">
+      <label>Descrição</label>
+      <textarea oninput="state.form.description=this.value">${f.description}</textarea>
+    </div>
+
+    <div class="tier-label">Setores e preços</div>
+    ${f.tiers.map((t,i)=>`
+      <div class="tier-editor">
+        <div class="field"><label>Nome do setor</label><input type="text" value="${t.name}" oninput="state.form.tiers[${i}].name=this.value"></div>
+        <div class="tier-editor-row">
+          <div class="field"><label>Preço (R$)</label><input type="number" min="0" step="0.01" value="${t.price}" oninput="state.form.tiers[${i}].price=parseFloat(this.value)||0"></div>
+          <div class="field"><label>Quantidade</label><input type="number" min="0" step="1" value="${t.capacity}" oninput="state.form.tiers[${i}].capacity=parseInt(this.value)||0"></div>
+        </div>
+        ${f.tiers.length>1 ? `<button class="remove-tier" onclick="removeTier(${i})">Remover setor</button>` : ''}
+      </div>`).join('')}
+    <button class="add-tier-btn" onclick="addTier()">+ Adicionar setor</button>
+  </main>
+  <div class="cta-bar">
+    <button class="btn btn-primary btn-block" onclick="saveForm()">${f.id ? 'Salvar alterações' : 'Publicar evento'}</button>
+  </div>`;
+}
+function addTier(){ state.form.tiers.push({name:'', price:0, capacity:0}); render(); }
+function removeTier(i){ state.form.tiers.splice(i,1); render(); }
+async function saveForm(){
+  const f = state.form;
+  if(!f.title.trim() || !f.venue.trim() || !f.date){
+    showToast('Preencha título, local e data');
+    return;
+  }
+  const dateIso = new Date(f.date).toISOString();
+  if(f.id){
+    const idx = state.events.findIndex(e=>e.id===f.id);
+    state.events[idx] = {...f, date: dateIso};
+  }else{
+    state.events.push({...f, id:'ev_'+Date.now(), date: dateIso});
+  }
+  await saveEvents();
+  showToast(f.id ? 'Evento atualizado' : 'Evento publicado');
+  go('admin');
+}
+
+function showSetupGuide(){
+  alert(`🔧 INTEGRAÇÃO DE PAGAMENTO
+
+Para ativar pagamento real no seu app:
+
+━━━ STRIPE ━━━
+1. Crie conta em stripe.com
+2. Pegue Secret Key
+3. Crie um backend que chame:
+   POST /create-checkout-session
+4. Redirecione para Stripe
+
+━━━ MERCADOPAGO ━━━
+1. Crie conta em mercadopago.com
+2. Pegue ACCESS_TOKEN
+3. Crie um backend que chame
+   a API de preferences do MP
+4. Redirecione cliente para checkout
+
+Precisa de ajuda? Veja a documentação
+dos gateways no seu painel de admin.`);
+}
+
+/* ---------- RENDER ROOT ---------- */
+function render(){
+  const app = document.getElementById('app');
+  if(state.loading){ app.innerHTML = `<main style="padding:60px 20px;text-align:center;color:var(--muted);"><div class="spinner"></div><div style="margin-top:16px;">Carregando...</div></main>`; return; }
+  if(state.processingPayment){ app.innerHTML = `<main style="padding:120px 20px;text-align:center;color:var(--muted);"><div class="spinner"></div><div style="margin-top:16px;">Processando pagamento...</div></main>`; return; }
+  
+  let html = '';
+  switch(state.view){
+    case 'home': html = renderHome(); break;
+    case 'detail': html = renderDetail(); break;
+    case 'checkout': html = renderCheckout(); break;
+    case 'confirm': html = renderConfirm(); break;
+    case 'tickets': html = renderTickets(); break;
+    case 'admin': html = renderAdmin(); break;
+    case 'adminForm': html = renderAdminForm(); break;
+    default: html = renderHome();
+  }
+  app.innerHTML = html;
+}
+
+async function init(){
+  await Promise.all([loadEvents(), loadTickets()]);
+  state.loading = false;
+  render();
+}
+init();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('Service Worker registrado com sucesso'))
+      .catch(error => console.error('Erro ao registrar Service Worker:', error));
+  });
+}
+</script>
+</body>
+</html>
