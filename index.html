@@ -729,7 +729,41 @@ async function saveForm(){
 }
 
 /* ---------- RENDER ROOT ---------- */
-function render(){
+
+
+function renderCurrentView(){
+  if(state.loading){
+    return '<main><div class="loading"><span class="spinner"></span></div></main>';
+  }
+
+  switch(state.view){
+    case 'home':
+      return renderHome();
+
+    case 'detail':
+      return renderDetail();
+
+    case 'checkout':
+      return renderCheckout();
+
+    case 'confirm':
+      return renderConfirm();
+
+    case 'tickets':
+      return renderTickets();
+
+    case 'admin':
+      return renderAdmin();
+
+    case 'adminForm':
+      return renderAdminForm();
+
+    default:
+      return renderHome();
+  }
+}
+
+function render(){function render(){
   const active = document.activeElement;
   const focusId = active && active.id ? active.id : null;
   const start = active && typeof active.selectionStart === 'number' ? active.selectionStart : null;
