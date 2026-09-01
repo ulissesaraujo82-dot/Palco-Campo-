@@ -24,15 +24,15 @@
   ],
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2315121c' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='80' fill='%23ff3d68' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>P</text></svg>",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%2315121c' width='512' height='512' rx='120'/><text x='50%' y='50%' font-size='200' fill='%23ff3d68' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>P</text></svg>",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ],
