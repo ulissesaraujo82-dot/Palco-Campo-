@@ -1,14 +1,31 @@
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido' });
+    return res.status(405).json({
+      error: 'Método não permitido'
+    });
   }
 
   try {
-    const { email, nome, evento, ingresso, quantidade, total, codigo } = req.body;
+    const {
+      email,
+      nome,
+      evento,
+      ingresso,
+      quantidade,
+      total,
+      codigo
+    } = req.body;
 
     if (!email) {
-      return res.status(400).json({ error: 'E-mail não informado' });
+      return res.status(400).json({
+        error: 'E-mail não informado'
+      });
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        error: 'RESEND_API_KEY não está configurada no Vercel'
+      });
     }
 
     const resposta = await fetch('https://api.resend.com/emails', {
@@ -38,17 +55,23 @@ export default async function handler(req, res) {
     const dados = await resposta.json();
 
     if (!resposta.ok) {
-      return res.status(resposta.status).json(dados);
+      return res.status(resposta.status).json({
+        sucesso: false,
+        erro_resend: dados
+      });
     }
 
     return res.status(200).json({
       sucesso: true,
+      mensagem: 'E-mail enviado com sucesso',
       id: dados.id
     });
 
   } catch (erro) {
     return res.status(500).json({
-      error: 'Erro ao enviar e-mail'
+      sucesso: false,
+      error: 'Erro ao conectar com o Resend',
+      detalhes: erro.message
     });
   }
 }
