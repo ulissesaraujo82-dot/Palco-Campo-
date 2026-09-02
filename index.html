@@ -530,9 +530,8 @@ function renderCheckout(){
   </main>
 
   <div class="cta-bar">
-    <button class="btn btn-primary btn-block" ${canBuy?'':'disabled'}
-      onclick="processPayment()">Continuar com PIX ${fmtMoney(total)}</button>
-  </div>`;
+<button class="btn btn-primary btn-block"
+  onclick="processPayment()">Continuar com PIX ${fmtMoney(total)}</button></div>`;
 }
 
 async function processPayment(){
