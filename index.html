@@ -563,7 +563,38 @@ async function processPayment(){
   };
 
   state.processingPayment = false;
-  go('confirm');
+
+// Enviar e-mail
+try {
+  const respostaEmail = await fetch('/api/send-email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      email: state.buyer.email,
+      nome: state.buyer.name,
+      evento: ev.title,
+      ingresso: tier.name,
+      quantidade: state.qty,
+      total: total,
+      codigo: state.lastPurchase.code
+    })
+  });
+
+  const resultadoEmail = await respostaEmail.json();
+
+  if (!respostaEmail.ok) {
+    console.error('Erro ao enviar e-mail:', resultadoEmail);
+  } else {
+    console.log('E-mail enviado:', resultadoEmail);
+  }
+
+} catch (erro) {
+  console.error('Erro na comunicação com o servidor:', erro);
+}
+
+go('confirm');
 }
 
 /* ---------- CONFIRMATION ---------- */
