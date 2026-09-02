@@ -263,6 +263,9 @@
 </div>
 
 <script>
+  // CONFIGURAÇÃO DO PIX
+const PIX_KEY = '25d8d875-d037-49e5-a12e-813fae1b1f9f';
+const PIX_RECEIVER = 'Ulisses';
 // Register Service Worker para funcionar offline
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(err => {
@@ -567,31 +570,78 @@ async function processPayment(){
 /* ---------- CONFIRMATION ---------- */
 function renderConfirm(){
   const p = state.lastPurchase;
+
   return `
   <main>
     <div class="confirm-wrap">
       <div class="check-circle">${ICONS.check}</div>
+
       <div class="display" style="font-size:24px;">Pedido criado!</div>
-      <div style="color:var(--muted);font-size:14px;margin-top:6px;">Pedido registrado para ${p.buyer.email}</div>
+
+      <div style="color:var(--muted);font-size:14px;margin-top:6px;">
+        Pedido registrado para ${p.buyer.email}
+      </div>
 
       <div class="final-ticket">
         <div class="ft-top">
-          <div class="ev-title" style="font-size:20px;">${p.eventTitle}</div>
+          <div class="ev-title" style="font-size:20px;">
+            ${p.eventTitle}
+          </div>
+
           <div class="ev-meta" style="margin-top:8px;">
             <span>🗓️ ${fmtDate(p.eventDate)}</span>
             <span>📍 ${p.venue} · ${p.city}</span>
             <span>🎟️ ${p.tierName} × ${p.qty}</span>
             <span>💠 PIX · Aguardando pagamento</span>
           </div>
+
+          <div style="margin-top:18px;padding:16px;background:var(--panel2);border-radius:12px;">
+            <div style="font-size:13px;color:var(--muted);">
+              Valor do PIX
+            </div>
+
+            <div class="display" style="font-size:28px;margin-top:4px;">
+              ${fmtMoney(p.total)}
+            </div>
+
+            <div style="font-size:13px;color:var(--muted);margin-top:14px;">
+              Chave PIX
+            </div>
+
+            <div style="word-break:break-all;margin-top:5px;font-size:14px;">
+              ${PIX_KEY}
+            </div>
+
+            <div style="font-size:13px;color:var(--muted);margin-top:10px;">
+              Recebedor: ${PIX_RECEIVER}
+            </div>
+
+            <button
+              class="btn btn-primary btn-block"
+              style="margin-top:14px;"
+              onclick="copyPixKey()">
+              Copiar chave PIX
+            </button>
+          </div>
         </div>
+
         <div class="ft-code">${p.code}</div>
       </div>
     </div>
   </main>
+
   <div class="cta-bar">
-    <button class="btn btn-primary btn-block" onclick="go('home',{category:'all'})">Voltar ao início</button>
+    <button class="btn btn-primary btn-block" onclick="go('home',{category:'all'})">
+      Voltar ao início
+    </button>
   </div>`;
 }
+
+function copyPixKey(){
+  navigator.clipboard.writeText(PIX_KEY)
+    .then(() => showToast('Chave PIX copiada!'))
+    .catch(() => showToast('Não foi possível copiar a chave'));
+  }
 
 /* ---------- MY TICKETS ---------- */
 function renderTickets(){
