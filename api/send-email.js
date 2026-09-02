@@ -44,6 +44,9 @@ export default async function handler(req, res) {
           <h2>Pedido recebido!</h2>
           <p>Olá, ${nome || 'cliente'}!</p>
           <p>Recebemos seu pedido no <strong>Palco Campo</strong>.</p>
+          <p><strong>Valor a pagar:</strong> R$ ${total || ''}</p>
+<p><strong>Chave PIX:</strong> ${pixKey || ''}</p>
+<p><strong>Recebedor:</strong> ${pixReceiver || ''}</p>
           <p><strong>Evento:</strong> ${evento || ''}</p>
           <p><strong>Ingresso:</strong> ${ingresso || ''}</p>
           <p><strong>Quantidade:</strong> ${quantidade || ''}</p>
