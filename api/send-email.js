@@ -49,7 +49,9 @@ export default async function handler(req, res) {
           <p><strong>Quantidade:</strong> ${quantidade || ''}</p>
           <p><strong>Total:</strong> ${total || ''}</p>
           <p><strong>Código do pedido:</strong> ${codigo || ''}</p>
-          <p>O pagamento via PIX ainda está aguardando confirmação.</p>
+          <p>Copie a chave PIX e faça o pagamento no aplicativo do seu banco.</p>
+<p>Após o pagamento, aguarde a confirmação do pedido.</p>
+<p><strong>Status:</strong> Aguardando pagamento.</p>
         `
       })
     });
