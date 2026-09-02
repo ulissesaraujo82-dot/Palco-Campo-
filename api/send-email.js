@@ -13,7 +13,9 @@ export default async function handler(req, res) {
       ingresso,
       quantidade,
       total,
-      codigo
+      codigo,
+      pixKey,
+      pixReceiver
     } = req.body;
 
     if (!email) {
